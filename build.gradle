@@ -1,6 +1,7 @@
 plugins {
 	id 'org.springframework.boot' version '2.5.4'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id 'idea'
 	id 'java'
 }
 
@@ -12,12 +13,47 @@ repositories {
 	mavenCentral()
 }
 
+configurations {
+	jaxb
+}
+
+task genJaxb {
+	ext.schemaDir = "${project.projectDir}/src/main/resources/wsdl"
+	ext.outputDir = "${buildDir}/generated/sources/xjc"
+
+	doLast() {
+		project.ant {
+			mkdir(dir: outputDir)
+			taskdef name: "xjc", classname: "org.jvnet.jaxb2_commons.xjc.XJC2Task", classpath: configurations.jaxb.asPath
+
+			xjc(destdir: outputDir, 'package': 'com.kuehnenagel.service.api', extension: true) {
+				arg line: "-wsdl"
+				schema dir: schemaDir, includes: "**/*.wsdl"
+				produces dir: outputDir, includes: "**/*.java"
+			}
+		}
+	}
+	sourceSets.main.java.srcDirs += outputDir
+	compileJava.dependsOn genJaxb
+}
+
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'io.projectreactor:reactor-test'
+	implementation "org.springframework.boot:spring-boot-starter-webflux"
+	testImplementation "org.springframework.boot:spring-boot-starter-test"
+	testImplementation "io.projectreactor:reactor-test"
+
+	// WS
+	implementation "org.springframework.ws:spring-ws-core"
+	implementation "org.glassfish.jaxb:jaxb-runtime"
+	implementation "com.sun.xml.ws:jaxws-ri:3.0.2"
+
+	jaxb "com.sun.xml.bind:jaxb-xjc:2.2.4"
+	jaxb "org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.6.5"
 }
 
 test {
 	useJUnitPlatform()
 }
+
+
+
