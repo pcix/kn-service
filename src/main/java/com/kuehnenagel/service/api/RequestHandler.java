@@ -2,6 +2,8 @@ package com.kuehnenagel.service.api;
 
 import com.kuehnenagel.service.api.model.Request;
 import com.kuehnenagel.service.api.model.Response;
+import com.kuehnenagel.service.database.model.History;
+import com.kuehnenagel.service.database.repository.HistoryRepository;
 import com.kuehnenagel.service.ws.WebServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RequestHandler {
 
+    private final HistoryRepository historyRepository;
     private final WebServiceClient wsClient;
     private final Validator validator;
 
@@ -30,8 +33,10 @@ public class RequestHandler {
                 .doOnNext(this::validate)
                 .flatMap(r -> Mono.just(r.getMessage())
                         .transform(wsClient::call)
-                        .transformDeferredContextual((resultCode, ctx) ->
-                                resultCode.flatMap(c -> ServerResponse.ok()
+                        .map(code -> new History(r.getId(), r.getMessage()))
+                        .flatMap(historyRepository::save)
+                        .transformDeferredContextual((record, ctx) ->
+                                record.flatMap(c -> ServerResponse.ok()
                                         .contentType(MediaType.APPLICATION_JSON)
                                         .bodyValue(new Response(ctx.getOrDefault(MESSAGE_ID, 0)))))
                         .contextWrite(ctx -> ctx.put(MESSAGE_ID, r.getId())));
