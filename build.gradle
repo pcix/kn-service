@@ -1,6 +1,7 @@
 plugins {
 	id 'org.springframework.boot' version '2.5.4'
 	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id "io.freefair.lombok" version "6.2.0"
 	id 'idea'
 	id 'java'
 }
@@ -26,7 +27,7 @@ task genJaxb {
 			mkdir(dir: outputDir)
 			taskdef name: "xjc", classname: "org.jvnet.jaxb2_commons.xjc.XJC2Task", classpath: configurations.jaxb.asPath
 
-			xjc(destdir: outputDir, 'package': 'com.kuehnenagel.service.api', extension: true) {
+			xjc(destdir: outputDir, 'package': 'com.kuehnenagel.service.ws.model', extension: true) {
 				arg line: "-wsdl"
 				schema dir: schemaDir, includes: "**/*.wsdl"
 				produces dir: outputDir, includes: "**/*.java"
@@ -39,6 +40,7 @@ task genJaxb {
 
 dependencies {
 	implementation "org.springframework.boot:spring-boot-starter-webflux"
+	implementation "org.springframework.boot:spring-boot-starter-validation"
 	testImplementation "org.springframework.boot:spring-boot-starter-test"
 	testImplementation "io.projectreactor:reactor-test"
 
